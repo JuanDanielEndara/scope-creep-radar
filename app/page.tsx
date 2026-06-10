@@ -442,6 +442,22 @@ export default function Home() {
     }
   }
 
+  function handleClearAll() {
+    setRequestText("");
+    setRequestSource("Client message");
+    setProjectStage("Development");
+    setOptionalContext("");
+    setSelectedExample(NO_EXAMPLE_SELECTED);
+    setSelectedProjectContextId("");
+    setProjectContextName("");
+    setAnalysis(null);
+    setErrorMessage("");
+    setCopied(false);
+    setContextMessage("");
+    setFileMessage("");
+    setToneLoading(null);
+  }
+
   async function handleCopyResponse() {
     if (!analysis?.suggested_response) return;
 
@@ -453,6 +469,59 @@ export default function Home() {
     }, 1800);
   }
 
+  function buildFullReport() {
+    if (!analysis) return "";
+
+    const hiddenAssumptions = analysis.hidden_assumptions
+      .map((item) => `- ${item}`)
+      .join("\n");
+
+    const clarifyingQuestions = analysis.clarifying_questions
+      .map((item) => `- ${item}`)
+      .join("\n");
+
+    return `# Scope Creep Analysis
+
+Risk level: ${analysis.risk_level}
+
+Risk summary:
+${analysis.risk_explanation}
+
+Hidden assumptions:
+${hiddenAssumptions}
+
+Why this may be bigger than it sounds:
+${analysis.why_bigger}
+
+Clarifying questions:
+${clarifyingQuestions}
+
+Recommended next action:
+${analysis.recommended_action}
+
+Recommended action explanation:
+${analysis.recommended_action_explanation}
+
+Suggested response:
+${analysis.suggested_response}`;
+  }
+
+  async function handleCopyFullReport() {
+    if (!analysis) return;
+
+    const fullReport = buildFullReport();
+
+    try {
+      await navigator.clipboard.writeText(fullReport);
+      setCopied(true);
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 1500);
+    } catch {
+      setErrorMessage("Could not copy the full report.");
+    }
+  }
   async function handleRewriteTone(tone: "softer" | "firmer") {
     if (!analysis?.suggested_response) return;
 
@@ -716,107 +785,137 @@ export default function Home() {
                 </div>
               ) : null}
 
-              <button
-                type="button"
-                onClick={handleAnalyze}
-                disabled={isLoading}
-                className="w-full rounded-2xl bg-indigo-600 px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
-              >
-                {isLoading ? "Analyzing request..." : "Analyze request"}
-              </button>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={handleAnalyze}
+                  disabled={isLoading}
+                  className="flex-1 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
+                  {isLoading ? "Analyzing..." : "Analyze request"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  disabled={isLoading}
+                  className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+                >
+                  Clear all
+                </button>
+              </div>
             </div>
           </section>
 
           <section className="space-y-4">
-            {isLoading ? (
-              <LoadingAnalysis />
-            ) : !analysis ? (
-              <section className="flex min-h-[520px] items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
-                <div className="max-w-md">
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-2xl text-indigo-600">
-                    ◌
-                  </div>
-                  <h2 className="text-xl font-semibold tracking-tight text-slate-950">
-                    Your analysis will appear here
-                  </h2>
-                  <p className="mt-3 text-sm leading-6 text-slate-500">
-                    Paste a request or load an example, then run the radar to see
-                    the scope risk, hidden assumptions, clarifying questions, and a
-                    copy-ready response.
-                  </p>
-                </div>
-              </section>
-            ) : (
-              <>
-                <div className="grid gap-4 xl:grid-cols-2">
-                  <Card title="Scope risk">
-                    <div className="mb-3">
-                      <Badge level={analysis.risk_level} />
+                {isLoading ? (
+                  <LoadingAnalysis />
+                ) : !analysis ? (
+                  <section className="flex min-h-[520px] items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
+                    <div className="max-w-md">
+                      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-2xl text-indigo-600">
+                        ◌
+                      </div>
+                      <h2 className="text-xl font-semibold tracking-tight text-slate-950">
+                        Your analysis will appear here
+                      </h2>
+                      <p className="mt-3 text-sm leading-6 text-slate-500">
+                        Paste a request or load an example, then run the radar to see
+                        the scope risk, hidden assumptions, clarifying questions, and a
+                        copy-ready response.
+                      </p>
                     </div>
-                    <p className="text-sm leading-6 text-slate-700">
-                      {analysis.risk_explanation}
-                    </p>
-                  </Card>
+                  </section>
+                ) : (
+                  <>
+                    <div className="rounded-3xl border border-indigo-100 bg-indigo-50 p-5">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500">
+                        Quick read
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-slate-700">
+                        This looks like a{" "}
+                        <span className="font-semibold text-slate-950">
+                          {analysis.risk_level}
+                        </span>{" "}
+                        scope risk because {analysis.risk_explanation.toLowerCase()}
+                      </p>
+                    </div>
+                    <div className="grid gap-4 xl:grid-cols-2">
+                      <Card title="Scope risk">
+                        <div className="mb-3">
+                          <Badge level={analysis.risk_level} />
+                        </div>
+                        <p className="text-sm leading-6 text-slate-700">
+                          {analysis.risk_explanation}
+                        </p>
+                      </Card>
 
-                  <Card title="Recommended next action">
-                    <p className="font-semibold text-slate-950">
-                      {analysis.recommended_action}
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-slate-700">
-                      {analysis.recommended_action_explanation}
-                    </p>
-                  </Card>
-                </div>
+                      <Card title="Recommended next action">
+                        <p className="font-semibold text-slate-950">
+                          {analysis.recommended_action}
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-slate-700">
+                          {analysis.recommended_action_explanation}
+                        </p>
+                      </Card>
+                    </div>
 
-                <div className="grid gap-4 xl:grid-cols-2">
-                  <Card title="Hidden assumptions">
-                    <ResultList items={analysis.hidden_assumptions} />
-                  </Card>
+                    <div className="grid gap-4 xl:grid-cols-2">
+                      <Card title="Hidden assumptions">
+                        <ResultList items={analysis.hidden_assumptions} />
+                      </Card>
 
-                  <Card title="Clarifying questions">
-                    <ResultList items={analysis.clarifying_questions} />
-                  </Card>
-                </div>
+                      <Card title="Clarifying questions">
+                        <ResultList items={analysis.clarifying_questions} />
+                      </Card>
+                    </div>
 
-                <Card title="Why this may be bigger than it sounds">
-                  <p className="text-sm leading-6 text-slate-700">
-                    {analysis.why_bigger}
-                  </p>
-                </Card>
+                    <Card title="Why this may be bigger than it sounds">
+                      <p className="text-sm leading-6 text-slate-700">
+                        {analysis.why_bigger}
+                      </p>
+                    </Card>
 
-                <Card title="Suggested response">
-                  <div className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700">
-                    {analysis.suggested_response}
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={handleCopyResponse}
-                      className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white"
-                    >
-                      {copied ? "Copied!" : "Copy response"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleRewriteTone("softer")}
-                      disabled={!analysis || toneLoading !== null}
-                      className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
-                    >
-                      {toneLoading === "softer" ? "Softening..." : "Make softer"}
-                    </button>
+                    <Card title="Suggested response">
+                      <div className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700">
+                        {analysis.suggested_response}
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={handleCopyResponse}
+                          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white"
+                        >
+                          {copied ? "Copied!" : "Copy response"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCopyFullReport}
+                          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                        >
+                          {copied ? "Copied!" : "Copy full report"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRewriteTone("softer")}
+                          disabled={!analysis || toneLoading !== null}
+                          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                        >
+                          {toneLoading === "softer" ? "Softening..." : "Make softer"}
+                        </button>
 
-                    <button
-                      type="button"
-                      onClick={() => handleRewriteTone("firmer")}
-                      disabled={!analysis || toneLoading !== null}
-                      className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
-                    >
-                      {toneLoading === "firmer" ? "Making firmer..." : "Make firmer"}
-                    </button>
-                  </div>
-                </Card>
-              </>
-            )}
+                        <button
+                          type="button"
+                          onClick={() => handleRewriteTone("firmer")}
+                          disabled={!analysis || toneLoading !== null}
+                          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                        >
+                          {toneLoading === "firmer" ? "Making firmer..." : "Make firmer"}
+                        </button>
+                      </div>
+                    </Card>
+                  </>
+                )}
           </section>
         </div>
       </div>

@@ -499,24 +499,19 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#f7f7fb] text-slate-950">
       <div className="mx-auto max-w-7xl px-6 py-8">
-        <header className="mb-8 flex items-center justify-between">
+        <header className="mb-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-950">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-500">
               Scope Creep Radar
+            </p>
+            <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950">
+              Review hidden assumptions before you commit.
             </h1>
-            <p className="mt-1 text-slate-500">
-              Review hidden assumptions, scope risk, and stakeholder responses before you commit.
+            <p className="mt-3 max-w-2xl text-base leading-7 text-slate-500">
+              Analyze stakeholder requests, identify scope risk, and generate a response
+              that protects delivery without sounding defensive.
             </p>
           </div>
-
-          <nav className="flex items-center gap-5 text-sm font-medium text-slate-500">
-            <a className="hover:text-slate-900" href="#">
-              Examples
-            </a>
-            <a className="hover:text-slate-900" href="#">
-              How it works
-            </a>
-          </nav>
         </header>
 
         <div className="grid gap-6 lg:grid-cols-[0.82fr_1.18fr]">

@@ -294,6 +294,15 @@ export default function Home() {
     }
 
     persistProjectContexts(updatedContexts);
+
+    if (typeof pendo !== "undefined") {
+      pendo.track("project_context_saved", {
+        is_update: !!existingContext,
+        context_name: trimmedName,
+        context_text_length: trimmedContext.length,
+        total_saved_contexts: updatedContexts.length,
+      });
+    }
   }
 
   function handleLoadProjectContext(contextId: string) {
@@ -326,6 +335,13 @@ export default function Home() {
     );
 
     persistProjectContexts(updatedContexts);
+
+    if (typeof pendo !== "undefined") {
+      pendo.track("project_context_deleted", {
+        total_saved_contexts_remaining: updatedContexts.length,
+      });
+    }
+
     setSelectedProjectContextId("");
     setProjectContextName("");
     setContextMessage("Context deleted.");
@@ -388,6 +404,14 @@ export default function Home() {
       setCopied(false);
       setFileMessage(`Loaded ${file.name}.`);
 
+      if (typeof pendo !== "undefined") {
+        pendo.track("notes_file_uploaded", {
+          file_type: fileName.substring(fileName.lastIndexOf(".")),
+          file_size_bytes: file.size,
+          extracted_content_length: fileContent.trim().length,
+        });
+      }
+
       event.target.value = "";
     } catch (error) {
       console.error("File upload error:", error);
@@ -430,6 +454,20 @@ export default function Home() {
       }
 
       setAnalysis(data);
+
+      if (typeof pendo !== "undefined") {
+        pendo.track("scope_analysis_completed", {
+          risk_level: data.risk_level,
+          recommended_action: data.recommended_action,
+          request_source: requestSource,
+          project_stage: projectStage,
+          has_project_context: optionalContext.trim().length > 0,
+          has_saved_context: selectedProjectContextId !== "",
+          request_text_length: requestText.length,
+          hidden_assumptions_count: data.hidden_assumptions?.length ?? 0,
+          clarifying_questions_count: data.clarifying_questions?.length ?? 0,
+        });
+      }
     } catch (error) {
       const message =
         error instanceof Error
@@ -463,6 +501,14 @@ export default function Home() {
 
     await navigator.clipboard.writeText(analysis.suggested_response);
     setCopied(true);
+
+    if (typeof pendo !== "undefined") {
+      pendo.track("suggested_response_copied", {
+        risk_level: analysis.risk_level,
+        recommended_action: analysis.recommended_action,
+        response_length: analysis.suggested_response.length,
+      });
+    }
 
     window.setTimeout(() => {
       setCopied(false);
@@ -515,6 +561,16 @@ ${analysis.suggested_response}`;
       await navigator.clipboard.writeText(fullReport);
       setCopied(true);
 
+      if (typeof pendo !== "undefined") {
+        pendo.track("full_report_copied", {
+          risk_level: analysis.risk_level,
+          recommended_action: analysis.recommended_action,
+          report_length: fullReport.length,
+          hidden_assumptions_count: analysis.hidden_assumptions.length,
+          clarifying_questions_count: analysis.clarifying_questions.length,
+        });
+      }
+
       setTimeout(() => {
         setCopied(false);
       }, 1500);
@@ -553,6 +609,16 @@ ${analysis.suggested_response}`;
         ...analysis,
         suggested_response: data.rewrittenResponse,
       });
+
+      if (typeof pendo !== "undefined") {
+        pendo.track("response_tone_rewritten", {
+          tone,
+          risk_level: analysis.risk_level,
+          request_text_length: requestText.length,
+          original_response_length: analysis.suggested_response.length,
+          rewritten_response_length: (data.rewrittenResponse as string).length,
+        });
+      }
     } catch (error) {
       const message =
         error instanceof Error
